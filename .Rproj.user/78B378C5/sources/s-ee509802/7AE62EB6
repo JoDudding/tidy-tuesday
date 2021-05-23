@@ -1,0 +1,28 @@
+{
+    "id": "7AE62EB6",
+    "path": "/cloud/project/2021-03-09_bechdel-test/index.Rmd",
+    "project_path": "2021-03-09_bechdel-test/index.Rmd",
+    "type": "r_markdown",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1621743530401.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "tempName": "Untitled1",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "12,18",
+        "scrollLine": "0",
+        "last_setup_crc32": ""
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1621750230,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1621750230638,
+    "read_only": false,
+    "read_only_alternatives": []
+}

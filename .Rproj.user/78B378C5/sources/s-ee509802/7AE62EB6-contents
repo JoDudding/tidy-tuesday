@@ -1,0 +1,238 @@
+---
+title: "<span style = 'color:#5F187FFF'>Bechdel Test</span>"
+author: "Jo Dudding"
+date: "2021-05-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+knitr::opts_chunk$set(
+  warning = FALSE, 
+  message = FALSE,
+  fig.retina = 3,
+  out.width = "100%"
+)
+
+library(tidyverse)
+library(scales)
+library(tidytuesdayR)
+library(skimr)
+library(ggtext)
+
+add_colour <- "#5F187FFF"
+theme_grey <- "#CBCBD9"
+
+theme_set(
+  theme_bw() %+replace%
+    theme(
+      # align title and caption to the plot not the panel
+      plot.title.position = 'plot',
+      plot.caption.position = 'plot',
+      # change the title and caption to markdown and move them further from the plot
+      plot.title = element_markdown(
+        hjust = 0, 
+        margin = margin(c(0, 0, 10, 0)),
+        colour = add_colour,
+        size = rel(1.25)
+      ),
+      plot.subtitle = element_markdown(
+        hjust = 0, 
+        margin = margin(c(0, 0, 15, 0))
+      ),
+      plot.caption = element_markdown(
+        hjust = 1, 
+        margin = margin(c(10, 0, 0, 0))
+      ),
+      # move axis titles to the left/top and change them to markdown
+      axis.title = element_markdown(hjust = 1),
+      # allow the axis values to the markdown as well
+      axis.text = element_markdown(),
+      # remove the panel border
+      panel.border = element_blank(),
+      # put in the axis lines with a slightly thicker line than the gridlines
+      axis.line = element_line(colour = theme_grey, size = rel(1.5)),
+      # make the tickmarks the same colour
+      axis.ticks = element_line(colour = theme_grey),
+      # dotted gridlines
+      panel.grid = element_line(linetype = 'dotted'),
+      # ability to use a different colour for the gridlines
+      panel.grid.major.x = element_line(colour = theme_grey),
+      panel.grid.major.y = element_line(colour = theme_grey),
+      panel.grid.minor.x = element_blank(),
+      panel.grid.minor.y = element_blank()
+    )
+)
+
+```
+
+```{css, echo = FALSE}
+h1, h2, h3 {
+  color:  "#5F187FFF";
+}
+
+```
+
+
+This analysis uses data from [FiveThirtyEight](https://github.com/fivethirtyeight/data/tree/master/bechdel) that was selected for [#tidytuesday](https://github.com/rfordatascience/tidytuesday/tree/master/data/2021/2021-03-09)
+
+```{r get-data}
+tuesdata <- tidytuesdayR::tt_load('2021-03-09')
+
+
+bechdel <- tuesdata$raw_bechdel
+movies <- tuesdata$movies
+```
+
+Was going to merge in the `movies` data but the `bechdel` dataset has
+`r comma(nrow(bechdel))`
+rows, and `movies` has only
+`r comma(nrow(movies))`
+rows.
+
+Let's see what the data looks like.
+
+```{r skim_data}
+skim(bechdel)
+```
+
+Looks like the `year` is skewed.  Let's look in more detail.
+
+```{r}
+bechdel %>% 
+ggplot(aes(year)) +
+  geom_histogram(binwidth = 1, fill = add_colour) +
+  scale_x_continuous(expand = expansion(mult = c(0, .05))) +
+  scale_y_continuous(expand = expansion(mult = c(0, .05))) +
+  labs(x = NULL, y = NULL, title = 'Histogram of year movie released')
+```
+
+Very skewed.  Let's focus on the last 50 years and remove 2021 as this will be a partial year.  A variable for decade will be added.
+
+```{r}
+bechdel <- bechdel %>% 
+  filter(year <= 2020 & year > 1970) %>% 
+  mutate(decade = year %/% 10 * 10) 
+```
+
+```{r}
+bechdel %>% 
+ggplot(aes(year)) +
+  geom_histogram(binwidth = 1, fill = add_colour) +
+  scale_x_continuous(expand = expansion(mult = c(0, .05))) +
+  scale_y_continuous(expand = expansion(mult = c(0, .05))) +
+  labs(x = NULL, y = NULL, title = 'Histogram of year movie released')
+```
+
+Now let's have a look at the Bechdel score.  First we need to make the variable more meaningful.
+
+```{r}
+bechdel <- bechdel %>% 
+  mutate(
+    bechdel = fct_reorder(case_when(
+      rating == 0 ~ "Fail - two named women",
+      rating == 1 ~ "Fail - talk to each other",
+      rating == 2 ~ "Fail - conversation about men",
+      rating == 3 ~ "Pass"
+    ), rating)
+  )
+```
+
+Then let's make a pie chart of this.
+
+```{r}
+bechdel %>% 
+  count(bechdel) %>% 
+  mutate(
+    pct = n / sum(n),
+    label = paste0(
+      str_wrap(bechdel, 10), 
+      '\n',
+      percent(pct)
+    )      
+  ) %>% 
+ggplot(aes(1, pct, label = label, fill = fct_rev(bechdel))) +
+  geom_col(width = 2) +
+  geom_text(aes(x = 3.5), position = position_stack(vjust = 0.5)) +
+  scale_x_continuous(limits = c(-1, 4)) +
+  scale_fill_manual(values = viridisLite::magma(6)[2:5]) +
+  coord_polar(theta = 'y') +
+  theme_void() +
+  guides(fill = 'none') +
+  labs(title = 'Pie chart of Bechdel test scores') +
+  theme(
+    # align title and caption to the plot not the panel
+    plot.title.position = 'plot',
+    plot.caption.position = 'plot',
+    # change the title and caption to markdown and move them further from the plot
+    plot.title = element_markdown(
+      hjust = 0, 
+      margin = margin(c(0, 0, 10, 0)),
+      colour = add_colour,
+        size = rel(1.25)
+    ),
+    plot.subtitle = element_markdown(
+      hjust = 0, 
+      margin = margin(c(0, 0, 15, 0))
+    ),
+    plot.caption = element_markdown(
+      hjust = 1, 
+      margin = margin(c(10, 0, 0, 0))
+    )
+  )
+```
+
+Let's see how this has been changing over time.
+
+```{r}
+bechdel %>% 
+  count(decade, bechdel) %>% 
+  group_by(decade) %>% 
+  mutate(
+    pct = n / sum(n),
+    label = percent(pct)
+  ) %>% 
+  ungroup() %>% 
+ggplot(aes(decade, pct, label = label, fill = fct_rev(bechdel))) +
+  geom_col() +
+  #geom_text(aes(x = 3.5), position = position_stack(vjust = 0.5)) +
+  scale_x_continuous(expand = expansion(mult = c(0, .05))) +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, .05)), 
+    label = percent_format()
+  ) +
+  scale_fill_manual(
+    values = viridisLite::magma(6)[2:5],
+    label = label_wrap(20)
+  ) +
+  labs(
+    x = 'Decade',
+    y = 'Percent of movies',
+    fill = 'Bechdel score',
+    title = 'Bechdel test scores by decade',
+    subtitle = 'Over time more movies pass the Bechdel test'
+  )
+
+```
+
+Let's see the names of some of the movies in 2020 that have failed the Bechdel test.
+
+```{r, echo = FALSE, results = 'asis'}
+bechdel %>% 
+  filter(year == 2020 & rating <= 2) %>% 
+  transmute(
+    title = paste(
+      '-', 
+      title, 
+      '(', 
+      bechdel,
+      ')',
+      '\n'
+    )
+  ) %>% 
+  pull() %>% 
+  cat()
+```
+
+
